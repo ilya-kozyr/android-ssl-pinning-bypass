@@ -34,11 +34,11 @@ check_tools() {
 		echo "${RED}Apk_signer not found, check the path in the script or download Apk_signer at https://github.com/patrickfav/uber-apk-signer/releases"
 		have_all_tools=false
 	fi
-	if [[ `which xmlstarlet` == "" ]]; then
+	if [[ `which xmlstarlet` = "" ]]; then
 		echo "${RED}xmlstarlet not found, install it via 'brew install xmlstarlet'"
 		have_all_tools=false
 	fi
-	if [[ $have_all_tools == false ]]; then
+	if [[ $have_all_tools = false ]]; then
 		exit
 	fi
 }
@@ -54,12 +54,19 @@ print_usage() {
 	echo "\tfile\tapk or aab file to rebuild"
 	echo
 	echo "${BLACK}OPTIONS${NC}"
-	echo "\t-i\tInstall the rebuilded apk file via 'adb install'"
-	echo "\t-p\tPreserve unpacked content of the input apk file"
-	echo "\t-r\tRemove the source apk file after rebuilding (not aab file)"
+	echo "\t-i, --install\tInstall the rebuilded apk file via 'adb install'"
+	echo "\t-p, --preserve\tPreserve unpacked content of the input apk file"
+	echo "\t-r, --remove\tRemove the source file after rebuilding"
+	echo "\t--pause\t\tPause the script execution before the building the output apk"
 	echo
 	echo "${BLACK}EXAMPLE${NC}"
 	echo "\t$script_name apk_to_rebuild.apk -r -i"
+}
+
+array_has_elem () {
+	array=$1
+	elem=$2
+	[[ ${array[*]} =~ (^|[[:space:]])"$elem"($|[[:space:]]) ]] && echo 1 || echo 0
 }
 
 run () {
@@ -108,38 +115,43 @@ run () {
 		mkdir "$decompiled_path/res/xml/"
 	fi
 	if [ ! -f "$nsc_file" ]; then
-		echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>" > $nsc_file
-		echo "<network-security-config>" >> $nsc_file
-		echo "  <base-config cleartextTrafficPermitted=\"true\">" >> $nsc_file
-		echo "    <trust-anchors>" >> $nsc_file
-		echo "      <certificates src=\"system\" />" >> $nsc_file
-		echo "      <certificates src=\"user\" />" >> $nsc_file
-		echo "    </trust-anchors>" >> $nsc_file
-		echo "  </base-config>" >> $nsc_file
-		echo "</network-security-config>" >> $nsc_file
+		echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>" > "$nsc_file"
+		echo "<network-security-config>" >> "$nsc_file"
+		echo "  <base-config cleartextTrafficPermitted=\"true\">" >> "$nsc_file"
+		echo "    <trust-anchors>" >> "$nsc_file"
+		echo "      <certificates src=\"system\" />" >> "$nsc_file"
+		echo "      <certificates src=\"user\" />" >> "$nsc_file"
+		echo "    </trust-anchors>" >> "$nsc_file"
+		echo "  </base-config>" >> "$nsc_file"
+		echo "</network-security-config>" >> "$nsc_file"
 	fi
 
-	if [[ `xmlstarlet sel -t -c "/network-security-config/base-config" $nsc_file` == "" ]]; then
-		xmlstarlet ed --inplace -s "/network-security-config" -t elem -n base-config $nsc_file
-		xmlstarlet ed --inplace -a "/network-security-config/base-config" -t attr -n cleartextTrafficPermitted -v true $nsc_file
-	elif [[ `xmlstarlet sel -t -c "/network-security-config/base-config[@cleartextTrafficPermitted='true']" $nsc_file` == "" ]]; then
-		xmlstarlet ed --inplace -a "/network-security-config/base-config" -t attr -n cleartextTrafficPermitted -v true $nsc_file
+	if [[ `xmlstarlet sel -t -c "/network-security-config/base-config" "$nsc_file"` = "" ]]; then
+		xmlstarlet ed --inplace -s "/network-security-config" -t elem -n base-config "$nsc_file"
+		xmlstarlet ed --inplace -a "/network-security-config/base-config" -t attr -n cleartextTrafficPermitted -v true "$nsc_file"
+	elif [[ `xmlstarlet sel -t -c "/network-security-config/base-config[@cleartextTrafficPermitted='true']" "$nsc_file"` = "" ]]; then
+		xmlstarlet ed --inplace -a "/network-security-config/base-config" -t attr -n cleartextTrafficPermitted -v true "$nsc_file"
 	fi
 
-	if [[ `xmlstarlet sel -t -c "/network-security-config/base-config/trust-anchors" $nsc_file` == "" ]]; then
-		xmlstarlet ed --inplace -s "/network-security-config/base-config" -t elem -n trust-anchors $nsc_file
+	if [[ `xmlstarlet sel -t -c "/network-security-config/base-config/trust-anchors" "$nsc_file"` = "" ]]; then
+		xmlstarlet ed --inplace -s "/network-security-config/base-config" -t elem -n trust-anchors "$nsc_file"
 	fi
 
-	for ca_type in 'system' 'user'; do
-		if [[ `xmlstarlet sel -t -c "/network-security-config/base-config/trust-anchors/certificates[@src='$ca_type']" $nsc_file` == "" ]]; then
-			xmlstarlet ed --inplace -s "/network-security-config/base-config/trust-anchors" -t elem -n certificates $nsc_file
-			xmlstarlet ed --inplace -a "/network-security-config/base-config/trust-anchors/certificates[not(@src)]" -t attr -n src -v $ca_type $nsc_file
+	for ca_type in "system" "user"; do
+		if [[ `xmlstarlet sel -t -c "/network-security-config/base-config/trust-anchors/certificates[@src='$ca_type']" "$nsc_file"` = "" ]]; then
+			xmlstarlet ed --inplace -s "/network-security-config/base-config/trust-anchors" -t elem -n certificates "$nsc_file"
+			xmlstarlet ed --inplace -a "/network-security-config/base-config/trust-anchors/certificates[not(@src)]" -t attr -n src -v $ca_type "$nsc_file"
 		fi	
 	done
 
 	echo "${CYAN}Checking ${YELLOW}AndroidManifest.xml${NC}"
-	if [[ `xmlstarlet sel -t -c "/manifest/application[@android:networkSecurityConfig='@xml/network_security_config']" "$decompiled_path/AndroidManifest.xml"` == "" ]]; then
+	if [[ `xmlstarlet sel -t -c "/manifest/application[@android:networkSecurityConfig='@xml/network_security_config']" "$decompiled_path/AndroidManifest.xml"` = "" ]]; then
 		xmlstarlet ed --inplace -a "/manifest/application" -t attr -n android:networkSecurityConfig -v @xml/network_security_config "$decompiled_path/AndroidManifest.xml"
+	fi
+
+	if [[ `array_has_elem "$*" "--pause"` = 1 ]]; then
+		echo "${CYAN}Paused. Perform necessary actions and press any key to continue ${NC}"
+		read
 	fi
 
 	echo "${CYAN}Building new APK file${NC}"
@@ -155,22 +167,19 @@ run () {
 
 	echo "${CYAN}Done in $SECONDS seconds${NC}"
 
-	preserve_unpacked_directory=false
-	for arg in "$@"
-	do
-		if [[ $arg = '-r' ]]; then
-			echo "${CYAN}Removing the source file $file_name.$file_ext${NC}"
-			rm "$file_name.$file_ext"
-		elif [[ $arg = '-p' ]]; then
-			preserve_unpacked_directory=true
-		elif [[ $arg = '-i' ]]; then
-			echo "${CYAN}Installing the rebuilded apk file ${YELLOW}$decompiled_path.apk${NC}"
-			adb install "$decompiled_path.apk"
-		fi
-	done
-	if [[ $preserve_unpacked_directory == false ]]; then
+	if [[ `array_has_elem "$*" "-r"` = 1 ]] || [[ `array_has_elem "$*" "--remove"` = 1 ]]; then
+		echo "${CYAN}Removing the source file $file_name.$file_ext${NC}"
+		rm "$file_name.$file_ext"
+	fi
+
+	if [[ `array_has_elem "$*" "-p"` = 0 ]] && [[ `array_has_elem "$*" "--preserve"` = 0 ]]; then
 		echo "${CYAN}Removing the unpacked content of the apk file $decompiled_path${NC}"
 		rm -rf "$decompiled_path"
+	fi
+
+	if [[ `array_has_elem "$*" "-i"` = 1 ]] || [[ `array_has_elem "$*" "--install"` = 1 ]]; then
+		echo "${CYAN}Installing the rebuilded apk file ${YELLOW}$decompiled_path.apk${NC}"
+		adb install "$decompiled_path.apk"
 	fi
 
 	echo "${CYAN}Output APK file ${YELLOW}$decompiled_path.apk${NC}"
