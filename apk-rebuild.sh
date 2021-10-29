@@ -81,8 +81,8 @@ run () {
 		exit 1
 	fi
 
-	file_dir=$(cd $(dirname "$1") && pwd)
-	cd $file_dir
+	file_dir=$(cd "$(dirname "$1")" && pwd)
+	cd "$file_dir"
 	file_ext=${1##*.}
 	file_name=$(basename "$1" ".$file_ext")
 
