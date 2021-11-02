@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Requirements:
 # bundletool - https://github.com/google/bundletool/releases
 # apktool - https://github.com/iBotPeaches/Apktool/releases
@@ -5,11 +7,11 @@
 # xmlstarlet - brew install xmlstarlet, http://xmlstar.sourceforge.net
 
 set_vars() {
-	NC="\033[0m"
-	CYAN="\033[1;36m"
-	RED="\033[1;31m"
-	YELLOW="\033[1;33m"
-	BLACK="\033[1;30m"
+	NC=$'\e[0m'
+	CYAN=$'\e[0;36m'
+	RED=$'\e[0;31m'
+	YELLOW=$'\e[0;33m'
+	BLACK=$'\e[1;30m'
 }
 
 set_path() {
@@ -45,22 +47,22 @@ check_tools() {
 
 print_usage() {
 	script_name=`basename "$0"`
-	echo "${BLACK}USAGE${NC}"
-	echo "\t$script_name file [OPTIONS]"
-	echo
-	echo "${BLACK}DESCRIPTION${NC}"
-	echo "\tThe script allows to bypass SSL pinning on Android > 6 via rebuilding the apk file (or making universal apk file from aab) and making the user credential storage trusted"
-	echo
-	echo "\tfile\tapk or aab file to rebuild"
-	echo
-	echo "${BLACK}OPTIONS${NC}"
-	echo "\t-i, --install\tInstall the rebuilded apk file via 'adb install'"
-	echo "\t-p, --preserve\tPreserve unpacked content of the input apk file"
-	echo "\t-r, --remove\tRemove the source file after rebuilding"
-	echo "\t--pause\t\tPause the script execution before the building the output apk"
-	echo
-	echo "${BLACK}EXAMPLE${NC}"
-	echo "\t$script_name apk_to_rebuild.apk -r -i"
+	echo -e "${BLACK}USAGE${NC}"
+	echo -e "\t$script_name file [OPTIONS]"
+	echo -e
+	echo -e "${BLACK}DESCRIPTION${NC}"
+	echo -e "\tThe script allows to bypass SSL pinning on Android > 6 via rebuilding the apk file (or making universal apk file from aab) and making the user credential storage trusted"
+	echo -e
+	echo -e "\tfile\tapk or aab file to rebuild"
+	echo -e
+	echo -e "${BLACK}OPTIONS${NC}"
+	echo -e "\t-i, --install\tInstall the rebuilded apk file via 'adb install'"
+	echo -e "\t-p, --preserve\tPreserve unpacked content of the input apk file"
+	echo -e "\t-r, --remove\tRemove the source file after rebuilding"
+	echo -e "\t--pause\t\tPause the script execution before the building the output apk"
+	echo -e
+	echo -e "${BLACK}EXAMPLE${NC}"
+	echo -e "\t$script_name apk_to_rebuild.apk -r -i"
 }
 
 array_has_elem () {
@@ -182,7 +184,7 @@ run () {
 		adb install "$decompiled_path.apk"
 	fi
 
-	echo "${CYAN}Output APK file ${YELLOW}$decompiled_path.apk${NC}"
+	echo "${CYAN}Output APK file: ${YELLOW}$decompiled_path.apk${NC}"
 }
 
 run "$@"
