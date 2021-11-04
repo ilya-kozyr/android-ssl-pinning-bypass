@@ -11,7 +11,7 @@ set_vars() {
 	CYAN=$'\e[0;36m'
 	RED=$'\e[0;31m'
 	YELLOW=$'\e[0;33m'
-	BLACK=$'\e[1;30m'
+	BLACK=$'\e[1m'
 }
 
 set_path() {
@@ -20,6 +20,7 @@ set_path() {
 	bundletool_path="$tools_path/bundletool-all-1.8.0.jar"
 	apktool_path="$tools_path/apktool_2.6.0.jar"
 	apk_signer_path="$tools_path/uber-apk-signer-1.2.1.jar"
+	keystore_path="$HOME/.android/debug.keystore"
 }
 
 check_tools() {
@@ -38,6 +39,10 @@ check_tools() {
 	fi
 	if [[ `which xmlstarlet` = "" ]]; then
 		echo "${RED}xmlstarlet not found, install it via 'brew install xmlstarlet'"
+		have_all_tools=false
+	fi
+	if [[ ! -f $keystore_path ]]; then
+		echo "${RED}keystore file not found, specify the path in the script or install Android Studio"
 		have_all_tools=false
 	fi
 	if [[ $have_all_tools = false ]]; then
@@ -76,12 +81,13 @@ run () {
 
 	set_vars
 	set_path
-	check_tools
 
 	if [[ $1 = "" ]]; then
 		print_usage
 		exit 1
 	fi
+
+	check_tools
 
 	file_dir=$(cd "$(dirname "$1")" && pwd)
 	cd "$file_dir"
@@ -181,7 +187,11 @@ run () {
 
 	if [[ `array_has_elem "$*" "-i"` = 1 ]] || [[ `array_has_elem "$*" "--install"` = 1 ]]; then
 		echo "${CYAN}Installing the rebuilded apk file ${YELLOW}$decompiled_path.apk${NC}"
-		adb install "$decompiled_path.apk"
+		if [[ `which adb` = "" ]]; then
+			echo "${RED}adb not found, add the path to adb to the PATH env var or install Android Studio or standalone command line tools"
+		else
+			adb install "$decompiled_path.apk"
+		fi
 	fi
 
 	echo "${CYAN}Output APK file: ${YELLOW}$decompiled_path.apk${NC}"
