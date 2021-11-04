@@ -5,6 +5,8 @@
 # apktool - https://github.com/iBotPeaches/Apktool/releases
 # uber-apk-signer - https://github.com/patrickfav/uber-apk-signer/releases
 # xmlstarlet - brew install xmlstarlet, http://xmlstar.sourceforge.net
+# adb - https://developer.android.com/studio
+# keystore file - debug.keystore file can be accessed in $HOME/.android when Android Studio is installed
 
 set_vars() {
 	NC=$'\e[0m'
