@@ -22,30 +22,41 @@ set_path() {
 	bundletool_path="$tools_path/bundletool-all-1.8.0.jar"
 	apktool_path="$tools_path/apktool_2.6.0.jar"
 	apk_signer_path="$tools_path/uber-apk-signer-1.2.1.jar"
-	keystore_path="$HOME/.android/debug.keystore"
+	keystore_catalog="$HOME/.android"
+	keystore_path="$keystore_catalog/debug.keystore"
 }
 
 check_tools() {
 	have_all_tools=true
 	if [ ! -f "$bundletool_path" ]; then
-		echo "${RED}Bundletool not found, check the path in the script or download Bundletool at https://github.com/google/bundletool/releases"
+		echo "${RED}bundletool not found, check the path in the script or download at https://github.com/google/bundletool/releases${NC}"
 		have_all_tools=false
 	fi
 	if [ ! -f "$apktool_path" ]; then
-		echo "${RED}Apktool not found, check the path in the script or download Apktool at https://github.com/iBotPeaches/Apktool/releases"
+		echo "${RED}apktool not found, check the path in the script or download at https://github.com/iBotPeaches/Apktool/releases${NC}"
 		have_all_tools=false
 	fi
 	if [ ! -f "$apk_signer_path" ]; then
-		echo "${RED}Apk_signer not found, check the path in the script or download Apk_signer at https://github.com/patrickfav/uber-apk-signer/releases"
+		echo "${RED}uber_apk_signer not found, check the path in the script or download at https://github.com/patrickfav/uber-apk-signer/releases${NC}"
 		have_all_tools=false
 	fi
 	if [[ $(which xmlstarlet) = "" ]]; then
-		echo "${RED}xmlstarlet not found, install it via 'brew install xmlstarlet'"
+		echo "${RED}xmlstarlet not found, install it via 'brew install xmlstarlet'${NC}"
 		have_all_tools=false
 	fi
 	if [[ ! -f "$keystore_path" ]]; then
-		echo "${RED}keystore file not found, specify the path in the script or install Android Studio"
-		have_all_tools=false
+		echo "${RED}keystore file not found, generating${NC}"
+		if [[ $(which keytool) = "" ]]; then
+			echo "${RED}keytool not found, install JDK to generate it${NC}"
+			have_all_tools=false
+		else
+			if [ ! -d "$keystore_catalog" ]; then mkdir "$keystore_catalog"; fi
+			keytool -genkey -v -keystore "$keystore_path" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "C=US, O=Android, CN=Android Debug"
+			if [[ ! -f "$keystore_path" ]]; then
+				echo "${RED}unable to generate keystore${NC}"
+				have_all_tools=false
+			fi
+		fi
 	fi
 	if [[ $have_all_tools = false ]]; then
 		exit
