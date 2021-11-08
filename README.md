@@ -1,11 +1,11 @@
 # android-ssl-pinning-bypass
 
-A bash script that prepares Android APK / AAB files for HTTPS traffic inspection.
+A bash script that prepares Android APK (or AAB) for HTTPS traffic inspection.
 
 ## Features
 The script allows to bypass SSL pinning on Android >= 7 via rebuilding the APK file (or making universal APK file from AAB) and making the user credential storage trusted. After processing the output APK file is ready for HTTPS traffic inspection.
 
-Works on macOS and Linux (not tested). Raise a [ticket](https://github.com/ilya-kozyr/android-ssl-pinning-bypass/issues/new/choose) if you need a Windows versions of the script.
+Works on macOS and Linux. Raise a [ticket](https://github.com/ilya-kozyr/android-ssl-pinning-bypass/issues/new/choose) if you need a Windows version of the script.
 
 ## How the script works?
 
@@ -65,6 +65,8 @@ Examples:
 - patch the APK file and do not delete the unpacked APK file content: `apk-rebuild.sh input.apk -p` or `apk-rebuild.sh input.apk --preserve`
 - patch the AAB file and make a pause before encoding the output APK: `apk-rebuild.sh input.aab --pause`
 - patch the APK file, remove the source APK file after patching and install the patched APK file on the Android-device: `apk-rebuild.sh input.apk -r -i`
+## Tip
+For easy capturing HTTPS traffic from development builds you can ask your developer to add the `<debug-overrides>` element to `the network_security_config.xml` (and add the `android:networkSecurityConfig` property to the `application` element in the `AndroidManifest.xml` of course): [https://developer.android.com/training/articles/security-config#debug-overrides](https://developer.android.com/training/articles/security-config#debug-overrides).
 ## Contribution
 For bug reports, feature requests or discussing an idea, open an issue [here](https://github.com/ilya-kozyr/android-ssl-pinning-bypass/issues).
 ## Credits
