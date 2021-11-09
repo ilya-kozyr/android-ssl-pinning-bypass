@@ -5,6 +5,7 @@ set_vars() {
 	CYAN=$'\e[0;36m'
 	RED=$'\e[0;31m'
 	YELLOW=$'\e[0;33m'
+	GREEN=$'\e[0;32m'
 	BLACK=$'\e[1m'
 	prefix=$(basename "$0")
 }
@@ -90,22 +91,22 @@ check_tools() {
 handle_exit() {
 	log_err "Terminated with Ctrl+C, removing temp files"
 	if [[ -d "$decompiled_path" ]]; then rm -rf "$decompiled_path"; fi
-	if [[ $file_ext_lower == "aab" ]]; then rm "$file_dir/$file_name.apk"; fi
-	if [[ -f "$file_name.apks" ]]; then rm "$file_name.apks"; fi
-	if [[ -d "$file_name" ]]; then rm -rf "$file_name"; fi
+	if [[ $source_file_ext_lower == "aab" ]]; then rm "$source_file_path/$source_file_name.apk"; fi
+	if [[ -f "$source_file_name.apks" ]]; then rm "$source_file_name.apks"; fi
+	if [[ -d "$source_file_path/$source_file_name" ]]; then rm -rf "$source_file_path/$source_file_name"; fi
 	exit 1
 }
 
 log_err() {
-	echo "${RED}[$prefix:ERROR] $*${NC}"
+	echo -e "${RED}[$prefix:ERROR] $*${NC}"
 }
 
 log_warn() {
-	echo "${YELLOW}[$prefix:WARNING] $*${NC}"
+	echo -e "${YELLOW}[$prefix:WARNING] $*${NC}"
 }
 
 log_msg() {
-	echo "${CYAN}[$prefix:INFO] $*${NC}"
+	echo -e "${CYAN}[$prefix:INFO] $*${NC}"
 }
 
 array_has_elem () {
@@ -120,67 +121,31 @@ print_usage() {
 	echo -e "\t$script_name file [OPTIONS]"
 	echo -e
 	echo -e "${BLACK}DESCRIPTION${NC}"
-	echo -e "\tThe script allows to bypass SSL pinning on Android >= 7 via rebuilding the apk file (or making universal apk file from aab) and making the user credential storage trusted"
+	echo -e "\tThe script allows to bypass SSL pinning on Android >= 7 via rebuilding the APK file and making the user credential storage trusted. After processing the output APK file is ready for HTTPS traffic inspection."
+	echo -e "\tIf an AAB file provided the script creates a universal APK and processes it. If a XAPK file provided the script unzips it and processes every APK file."
 	echo -e
-	echo -e "\tfile\tapk or aab file to rebuild"
+	echo -e "\tfile\tAPK, AAB or XAPK file to rebuild"
 	echo -e
 	echo -e "${BLACK}OPTIONS${NC}"
-	echo -e "\t-i, --install\tInstall the rebuilded apk file via 'adb install'"
-	echo -e "\t-p, --preserve\tPreserve unpacked content of the input apk file"
-	echo -e "\t-r, --remove\tRemove the source file after rebuilding"
-	echo -e "\t--pause\t\tPause the script execution before the building the output apk"
+	echo -e "\t-i, --install\tInstall the rebuilded APK file(s) via 'adb install'"
+	echo -e "\t-p, --preserve\tPreserve the unpacked content of the APK file(s)"
+	echo -e "\t-r, --remove\tRemove the source file (APK / AAB / XAPK), passed as the script argument, after rebuilding"
+	echo -e "\t--pause\t\tPause the script execution before the building the output APK"
 	echo -e
 	echo -e "${BLACK}EXAMPLE${NC}"
-	echo -e "\t$script_name apk_to_rebuild.apk -r -i"
+	echo -e "\t$script_name /path/to/file/file_to_rebuild.apk -r -i"
 }
 
-main () {
-	SECONDS=0
+rebuild_single_apk() {
+	apk_path=$(dirname "$1")
+	apk_name=$(basename "$1")
 
-	set_vars
-	set_path
+	decompiled_path="$apk_path/$apk_name-decompiled"
 
-	if [[ $1 == "" ]]; then
-		print_usage
-		exit 1
-	fi
-
-	check_tools
-
-	file_dir=$(cd "$(dirname "$1")" && pwd)
-	cd "$file_dir"
-	file_ext=${1##*.}
-	file_ext_lower=$(echo $file_ext | awk '{print tolower($0)}')
-	file_name=$(basename "$1" ".$file_ext")
-
-	trap handle_exit SIGINT
-
-	if [[ ! -f "$file_dir/$file_name.$file_ext" ]]; then
-		log_err "File $file_dir/$file_name.$file_ext not found"
-		exit 1
-	fi
-
-	if [[ $file_ext_lower == "aab" ]]; then
-		log_msg "Extracting apks from aab"
-		java -jar "$bundletool_path" build-apks --bundle="$file_name.$file_ext" --output="$file_name.apks" --mode=universal
-
-		log_msg "Extracting apk from apks and moving it"
-		unzip "$file_name.apks" -d "$file_name"
-		mv "$file_name/universal.apk" "$file_name.apk"
-
-		log_msg "Removing apks file and catalog"
-		rm "$file_name.apks"
-		rm -rf "$file_name"
-	elif [[ $file_ext_lower != "apk" ]]; then
-		log_err "Unknown file extension, expecting APK or AAB"
-		exit 1
-	fi
-
-	decompiled_path="$file_dir/$file_name.$file_ext_lower-decompiled"
-
-	log_msg "Decompiling the APK file"
-	java -jar "$apktool_path" d -o "$decompiled_path" "$file_dir/$file_name.apk"
-	# java -jar "$apktool_path" d --only-main-classes -o "$decompiled_path" "$file_dir/$file_name.apk"
+	log_msg "Processing ${YELLOW}$apk_name"
+	log_msg "Decompiling the apk file"
+	java -jar "$apktool_path" d -o "$decompiled_path" "$apk_path/$apk_name"
+	# java -jar "$apktool_path" d --only-main-classes -o "$decompiled_path" "$apk_path/$apk_name"
 
 	nsc_file="$decompiled_path/res/xml/network_security_config.xml"
 	log_msg "Processing ${YELLOW}@xml/network_security_config.xml"
@@ -224,43 +189,116 @@ main () {
 	fi
 
 	if [[ $(array_has_elem "$*" "--pause") == 1 ]]; then
-		log_msg "Paused. Perform necessary actions and press any key to continue"
+		log_msg "Paused. Perform necessary actions and press ENTER to continue..."
 		read
 	fi
 
-	log_msg "Building new APK file"
+	log_msg "Building a new apk file"
 	java -jar "$apktool_path" b "$decompiled_path" --use-aapt2
 
-	log_msg "Signing APK file"
-	java -jar "$apk_signer_path" -a "$decompiled_path/dist/$file_name.apk" --allowResign --overwrite
+	log_msg "Signing the apk file"
+	java -jar "$apk_signer_path" -a "$decompiled_path/dist/$apk_name" --allowResign --overwrite
 
-	mv "$decompiled_path/dist/$file_name.apk" "$decompiled_path.apk"
-	if [[ $file_ext_lower == "aab" ]]; then
-		rm "$file_dir/$file_name.apk"
-	fi
-
-	log_msg "Done in $SECONDS seconds"
-
-	if [[ $(array_has_elem "$*" "-r") == 1 ]] || [[ $(array_has_elem "$*" "--remove") == 1 ]]; then
-		log_warn "Removing the source file $file_name.$file_ext"
-		rm "$file_name.$file_ext"
-	fi
+	mv "$decompiled_path/dist/$apk_name" "$apk_path/$apk_name-patched.apk"
+	apk_to_install="\"$apk_path/$apk_name-patched.apk\""
 
 	if [[ $(array_has_elem "$*" "-p") == 0 ]] && [[ $(array_has_elem "$*" "--preserve") == 0 ]]; then
-		log_msg "Removing the unpacked content of the apk file $decompiled_path"
+		log_msg "Removing the unpacked content of the apk file ${YELLOW}$decompiled_path"
 		rm -rf "$decompiled_path"
+	fi
+}
+
+main () {
+	set_vars
+	set_path
+
+	if [[ $1 == "" ]]; then
+		print_usage
+		exit 1
+	fi
+
+	check_tools
+
+	source_file_path=$(cd "$(dirname "$1")" && pwd)
+	source_file_ext=${1##*.}
+	source_file_name=$(basename "$1" ".$source_file_ext")
+	source_file_ext_lower=$(echo $source_file_ext | awk '{print tolower($0)}')
+	source_file_full_path="$source_file_path/$source_file_name.$source_file_ext"
+
+	trap handle_exit SIGINT
+
+	if [[ ! -f "$source_file_full_path" ]]; then
+		log_err "File $source_file_full_path not found"
+		exit 1
+	fi
+
+	SECONDS=0
+
+	case $source_file_ext_lower in
+		"apk")
+			rebuild_single_apk "$source_file_path/$source_file_name.apk" "${@:2}"
+			;;
+		"aab")
+			log_msg "Extracting apks from aab"
+			java -jar "$bundletool_path" build-apks --bundle="$source_file_full_path" --output="$source_file_path/$source_file_name.apks" --mode=universal
+
+			log_msg "Extracting apk from apks and moving it"
+			unzip "$source_file_path/$source_file_name.apks" -d "$source_file_path/$source_file_name"
+			mv "$source_file_path/$source_file_name/universal.apk" "$source_file_path/$source_file_name.apk"
+
+			log_msg "Removing apks file and catalog"
+			rm "$source_file_path/$source_file_name.apks"
+			rm -rf "$source_file_path/$source_file_name"
+
+			rebuild_single_apk "$source_file_path/$source_file_name.apk" "${@:2}"
+
+			rm "$source_file_path/$source_file_name.apk"
+			;;
+		"xapk")
+			log_msg "Unzipping xapk"
+			unzip "$source_file_full_path" -d "$source_file_path/$source_file_name"
+			IFS=$'\n'
+			log_msg "Searching for apk files and processing them"
+			for single_apk in $(find "$source_file_path/$source_file_name" -maxdepth 1 -name "*.apk"); do
+				rebuild_single_apk "$single_apk" "${@:2}"
+				rm "$single_apk"
+			done
+
+			apks_list=""
+			apks_list_for_log=""
+			for single_apk in $(find "$source_file_path/$source_file_name" -maxdepth 1 -name "*-patched.apk"); do
+				apks_list="\"$single_apk\" $apks_list"
+				apks_list_for_log="- $single_apk\n$apks_list_for_log"
+			done
+			;;
+		*)
+			log_err "Unknown file extension, expecting apk, aab or xapk"
+			exit 1
+			;;
+	esac
+
+	log_msg "${GREEN}Rebuilded in $SECONDS seconds"
+
+	if [[ $(array_has_elem "$*" "-r") == 1 ]] || [[ $(array_has_elem "$*" "--remove") == 1 ]]; then
+		log_warn "Removing the source file $source_file_full_path"
+		rm "$source_file_full_path"
 	fi
 
 	if [[ $(array_has_elem "$*" "-i") == 1 ]] || [[ $(array_has_elem "$*" "--install") == 1 ]]; then
-		log_msg "Installing the rebuilded apk file $decompiled_path.apk"
 		if [[ $(which adb) == "" ]]; then
 			log_err "adb is missing, add the path to adb to the PATH env var or install Android Studio or standalone platform tools"
 		else
-			adb install "$decompiled_path.apk"
+			if [[ $source_file_ext_lower == "aab" ]] || [[ $source_file_ext_lower == "apk" ]]; then
+				log_msg "Installing the rebuilded apk file ${YELLOW}$apk_to_install"
+				adb install "$apk_path/$apk_name-patched.apk"
+				log_msg "Output apk file for using in adb: ${YELLOW}$apk_to_install"
+			elif [[ $source_file_ext_lower == "xapk" ]]; then
+				log_msg "Installing the rebuilded apk files:\n${YELLOW}$apks_list_for_log"
+				eval "adb install-multiple $apks_list"
+				log_msg "Output apk files for using in adb: ${YELLOW}$apks_list"
+			fi
 		fi
 	fi
-
-	log_msg "Output APK file: ${YELLOW}$decompiled_path.apk"
 }
 
 main "$@"
