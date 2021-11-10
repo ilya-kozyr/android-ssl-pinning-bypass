@@ -66,7 +66,7 @@ DESCRIPTION
 	file	APK, AAB or XAPK file to rebuild
 
 OPTIONS
-	-i, --install	Install the rebuilded APK file(s) via 'adb install'
+	-i, --install	Install the rebuilded APK file(s) via adb
 	-p, --preserve	Preserve the unpacked content of the APK file(s)
 	-r, --remove	Remove the source file (APK / AAB / XAPK), passed as the script argument, after rebuilding
 	--pause		Pause the script execution before the building the output APK

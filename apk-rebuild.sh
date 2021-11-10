@@ -35,7 +35,7 @@ check_tools() {
 			log_err "$tool_bin_name is missing"
 			log_warn "Removing previous versions of ${tools[i+3]} from $tools_catalog"
 			find $tools_catalog -name "${tools[i+3]}*.jar" -delete
-			log_msg "Downloading $tool_bin_name to $tools_catalog from $tool_bin_url"
+			log_info "Downloading $tool_bin_name to $tools_catalog from $tool_bin_url"
 			curl -fsSL "$tool_bin_url" --output "$tools_catalog/$tool_bin_name.jar"
 			echo
 			if [[ ! -f "$tools_catalog/$tool_bin_name.jar" ]]; then
@@ -52,7 +52,7 @@ check_tools() {
 			log_err "Unable to install xmlstarlet, Homebrew is missing"
 			have_all_tools=false
 		else
-			log_msg "Installing xmlstarlet"
+			log_info "Installing xmlstarlet"
 			brew install xmlstarlet
 			if [[ $(which xmlstarlet) == "" ]]; then
 				have_all_tools=false
@@ -69,7 +69,7 @@ check_tools() {
 				have_all_tools=false
 			else
 				log_err "keytool is missing"
-				log_msg "Installing openjdk"
+				log_info "Installing openjdk"
 				brew install openjdk
 			fi
 		fi
@@ -78,7 +78,7 @@ check_tools() {
 			log_err "Unable to install openjdk, install it manually"
 		else
 			if [[ ! -d "$keystore_catalog" ]]; then mkdir -p "$keystore_catalog"; fi
-			log_msg "Generating keystore"
+			log_info "Generating keystore"
 			keytool -genkey -v -keystore "$keystore_path" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "C=US, O=Android, CN=Android Debug"
 		fi
 	fi
@@ -105,14 +105,36 @@ log_warn() {
 	echo -e "${YELLOW}[$prefix:WARNING] $*${NC}"
 }
 
-log_msg() {
+log_info() {
 	echo -e "${CYAN}[$prefix:INFO] $*${NC}"
 }
 
-array_has_elem () {
-	array=$1
-	elem=$2
-	[[ ${array[*]} =~ (^|[[:space:]])"$elem"($|[[:space:]]) ]] && echo 1 || echo 0
+parse_arguments() {
+	new_args_list=()
+	while [[ $# -gt 0 ]]; do
+		case "$1" in
+			-i|--install)
+				arg_install_apk=1
+				shift
+				;;
+			-p|--preserve)
+				arg_preserve_catalog=1
+				shift
+				;;
+			-r|--remove)
+				arg_remove_source_file=1
+				shift
+				;;
+			--pause)
+				arg_pause_before_building=1
+				shift
+				;;
+			*)
+				new_args_list+=("$1")
+				shift
+				;;
+		esac
+	done
 }
 
 print_usage() {
@@ -127,7 +149,7 @@ print_usage() {
 	echo -e "\tfile\tAPK, AAB or XAPK file to rebuild"
 	echo -e
 	echo -e "${BLACK}OPTIONS${NC}"
-	echo -e "\t-i, --install\tInstall the rebuilded APK file(s) via 'adb install'"
+	echo -e "\t-i, --install\tInstall the rebuilded APK file(s) via adb"
 	echo -e "\t-p, --preserve\tPreserve the unpacked content of the APK file(s)"
 	echo -e "\t-r, --remove\tRemove the source file (APK / AAB / XAPK), passed as the script argument, after rebuilding"
 	echo -e "\t--pause\t\tPause the script execution before the building the output APK"
@@ -142,13 +164,13 @@ rebuild_single_apk() {
 
 	decompiled_path="$apk_path/$apk_name-decompiled"
 
-	log_msg "Processing ${YELLOW}$apk_name"
-	log_msg "Decompiling the apk file"
+	log_info "Processing ${YELLOW}$apk_name"
+	log_info "Decompiling the apk file"
 	java -jar "$apktool_path" d -o "$decompiled_path" "$apk_path/$apk_name"
 	# java -jar "$apktool_path" d --only-main-classes -o "$decompiled_path" "$apk_path/$apk_name"
 
 	nsc_file="$decompiled_path/res/xml/network_security_config.xml"
-	log_msg "Processing ${YELLOW}@xml/network_security_config.xml"
+	log_info "Processing ${YELLOW}@xml/network_security_config.xml"
 
 	if [[ ! -d "$decompiled_path/res/xml/" ]]; then
 		mkdir -p "$decompiled_path/res/xml/"
@@ -183,32 +205,34 @@ rebuild_single_apk() {
 		fi	
 	done
 
-	log_msg "Checking ${YELLOW}AndroidManifest.xml"
+	log_info "Checking ${YELLOW}AndroidManifest.xml"
 	if [[ $(xmlstarlet sel -t -c "/manifest/application[@android:networkSecurityConfig='@xml/network_security_config']" "$decompiled_path/AndroidManifest.xml") == "" ]]; then
 		xmlstarlet ed --inplace -a "/manifest/application" -t attr -n android:networkSecurityConfig -v @xml/network_security_config "$decompiled_path/AndroidManifest.xml"
 	fi
 
-	if [[ $(array_has_elem "$*" "--pause") == 1 ]]; then
-		log_msg "Paused. Perform necessary actions and press ENTER to continue..."
+	if [[ $arg_pause_before_building == 1 ]]; then
+		log_info "Paused. Perform necessary actions and press ENTER to continue..."
 		read
 	fi
 
-	log_msg "Building a new apk file"
+	log_info "Building a new apk file"
 	java -jar "$apktool_path" b "$decompiled_path" --use-aapt2
 
-	log_msg "Signing the apk file"
+	log_info "Signing the apk file"
 	java -jar "$apk_signer_path" -a "$decompiled_path/dist/$apk_name" --allowResign --overwrite
 
 	mv "$decompiled_path/dist/$apk_name" "$apk_path/$apk_name-patched.apk"
 	apk_to_install="\"$apk_path/$apk_name-patched.apk\""
 
-	if [[ $(array_has_elem "$*" "-p") == 0 ]] && [[ $(array_has_elem "$*" "--preserve") == 0 ]]; then
-		log_msg "Removing the unpacked content of the apk file ${YELLOW}$decompiled_path"
+	if [[ $arg_preserve_catalog != 1 ]]; then
+		log_info "Removing the unpacked content of the apk file ${YELLOW}$decompiled_path"
 		rm -rf "$decompiled_path"
 	fi
 }
 
 main () {
+	parse_arguments $*
+	set -- "${new_args_list[@]}"
 	set_vars
 	set_path
 
@@ -239,14 +263,14 @@ main () {
 			rebuild_single_apk "$source_file_path/$source_file_name.apk" "${@:2}"
 			;;
 		"aab")
-			log_msg "Extracting apks from aab"
+			log_info "Extracting apks from aab"
 			java -jar "$bundletool_path" build-apks --bundle="$source_file_full_path" --output="$source_file_path/$source_file_name.apks" --mode=universal
 
-			log_msg "Extracting apk from apks and moving it"
+			log_info "Extracting apk from apks and moving it"
 			unzip "$source_file_path/$source_file_name.apks" -d "$source_file_path/$source_file_name"
 			mv "$source_file_path/$source_file_name/universal.apk" "$source_file_path/$source_file_name.apk"
 
-			log_msg "Removing apks file and catalog"
+			log_info "Removing apks file and catalog"
 			rm "$source_file_path/$source_file_name.apks"
 			rm -rf "$source_file_path/$source_file_name"
 
@@ -255,10 +279,10 @@ main () {
 			rm "$source_file_path/$source_file_name.apk"
 			;;
 		"xapk")
-			log_msg "Unzipping xapk"
+			log_info "Unzipping xapk"
 			unzip "$source_file_full_path" -d "$source_file_path/$source_file_name"
 			IFS=$'\n'
-			log_msg "Searching for apk files and processing them"
+			log_info "Searching for apk files and processing them"
 			for single_apk in $(find "$source_file_path/$source_file_name" -maxdepth 1 -name "*.apk"); do
 				rebuild_single_apk "$single_apk" "${@:2}"
 				rm "$single_apk"
@@ -277,25 +301,25 @@ main () {
 			;;
 	esac
 
-	log_msg "${GREEN}Rebuilded in $SECONDS seconds"
+	log_info "${GREEN}Rebuilded in $SECONDS seconds"
 
-	if [[ $(array_has_elem "$*" "-r") == 1 ]] || [[ $(array_has_elem "$*" "--remove") == 1 ]]; then
+	if [[ $arg_remove_source_file == 1 ]]; then
 		log_warn "Removing the source file $source_file_full_path"
 		rm "$source_file_full_path"
 	fi
 
-	if [[ $(array_has_elem "$*" "-i") == 1 ]] || [[ $(array_has_elem "$*" "--install") == 1 ]]; then
+	if [[ $arg_install_apk == 1 ]]; then
 		if [[ $(which adb) == "" ]]; then
 			log_err "adb is missing, add the path to adb to the PATH env var or install Android Studio or standalone platform tools"
 		else
 			if [[ $source_file_ext_lower == "aab" ]] || [[ $source_file_ext_lower == "apk" ]]; then
-				log_msg "Installing the rebuilded apk file ${YELLOW}$apk_to_install"
+				log_info "Installing the rebuilded apk file ${YELLOW}$apk_to_install"
 				adb install "$apk_path/$apk_name-patched.apk"
-				log_msg "Output apk file for using in adb: ${YELLOW}$apk_to_install"
+				log_info "Output apk file for using in adb: ${YELLOW}$apk_to_install"
 			elif [[ $source_file_ext_lower == "xapk" ]]; then
-				log_msg "Installing the rebuilded apk files:\n${YELLOW}$apks_list_for_log"
+				log_info "Installing the rebuilded apk files:\n${YELLOW}$apks_list_for_log"
 				eval "adb install-multiple $apks_list"
-				log_msg "Output apk files for using in adb: ${YELLOW}$apks_list"
+				log_info "Output apk files for using in adb: ${YELLOW}$apks_list"
 			fi
 		fi
 	fi
