@@ -231,7 +231,7 @@ rebuild_single_apk() {
 }
 
 main () {
-	parse_arguments $*
+	parse_arguments "$@"
 	set -- "${new_args_list[@]}"
 	set_vars
 	set_path
