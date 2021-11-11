@@ -71,15 +71,15 @@ check_tools() {
 				log_err "keytool is missing"
 				log_info "Installing openjdk"
 				brew install openjdk
+				if [[ $(which keytool) == "" ]]; then
+					have_all_tools=false
+					log_err "Unable to install openjdk, install it manually"
+				else
+					if [[ ! -d "$keystore_catalog" ]]; then mkdir -p "$keystore_catalog"; fi
+					log_info "Generating keystore"
+					keytool -genkey -v -keystore "$keystore_path" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "C=US, O=Android, CN=Android Debug"
+				fi
 			fi
-		fi
-		if [[ $(which keytool) == "" ]]; then
-			have_all_tools=false
-			log_err "Unable to install openjdk, install it manually"
-		else
-			if [[ ! -d "$keystore_catalog" ]]; then mkdir -p "$keystore_catalog"; fi
-			log_info "Generating keystore"
-			keytool -genkey -v -keystore "$keystore_path" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "C=US, O=Android, CN=Android Debug"
 		fi
 	fi
 
@@ -129,6 +129,15 @@ parse_arguments() {
 				arg_pause_before_building=1
 				shift
 				;;
+			-f|--file)
+				arg_source_file="$2"
+				shift
+				shift
+				;;
+			-h|--help)
+				arg_help=1
+				shift
+				;;
 			*)
 				new_args_list+=("$1")
 				shift
@@ -140,22 +149,27 @@ parse_arguments() {
 print_usage() {
 	script_name=$(basename "$0")
 	echo -e "${BLACK}USAGE${NC}"
-	echo -e "\t$script_name file [OPTIONS]"
+	echo -e "\t$script_name [-f|--file] /path/to/file/source_file [OPTIONS]"
 	echo -e
 	echo -e "${BLACK}DESCRIPTION${NC}"
 	echo -e "\tThe script allows to bypass SSL pinning on Android >= 7 via rebuilding the APK file and making the user credential storage trusted. After processing the output APK file is ready for HTTPS traffic inspection."
 	echo -e "\tIf an AAB file provided the script creates a universal APK and processes it. If a XAPK file provided the script unzips it and processes every APK file."
 	echo -e
-	echo -e "\tfile\tAPK, AAB or XAPK file to rebuild"
+	echo -e "${BLACK}MANDATORY ARGUMENTS${NC}"
+	echo -e "\t-f, --file\tAPK, AAB or XAPK file for rebuilding. Can be specified with the keys -f or --file or just with a file path"
 	echo -e
 	echo -e "${BLACK}OPTIONS${NC}"
 	echo -e "\t-i, --install\tInstall the rebuilded APK file(s) via adb"
 	echo -e "\t-p, --preserve\tPreserve the unpacked content of the APK file(s)"
 	echo -e "\t-r, --remove\tRemove the source file (APK / AAB / XAPK), passed as the script argument, after rebuilding"
 	echo -e "\t--pause\t\tPause the script execution before the building the output APK"
+	echo -e "\t-h, --help\tPrint this help message"
 	echo -e
-	echo -e "${BLACK}EXAMPLE${NC}"
+	echo -e "${BLACK}EXAMPLES${NC}"
 	echo -e "\t$script_name /path/to/file/file_to_rebuild.apk -r -i"
+	echo -e "\t$script_name --file /path/to/file/file_to_rebuild.aab --remove --install"
+	echo -e "\t$script_name --pause -i -f /path/to/file/file_to_rebuild.xapk"
+	echo -e "\t$script_name /path/to/file/file_to_rebuild.xapk"
 }
 
 rebuild_single_apk() {
@@ -236,25 +250,27 @@ main () {
 	set_vars
 	set_path
 
-	if [[ $1 == "" ]]; then
+	if [[ $arg_source_file == "" ]]; then
+		arg_source_file=$1
+	fi
+
+	if [[ $arg_source_file == "" ]] || ([[ $arg_help == 1 ]] && [[ $arg_source_file == "" ]]); then
 		print_usage
+		exit 0
+	elif [[ ! -f "$arg_source_file" ]]; then
+		log_err "File $arg_source_file not found"
 		exit 1
 	fi
 
 	check_tools
 
-	source_file_path=$(cd "$(dirname "$1")" && pwd)
-	source_file_ext=${1##*.}
-	source_file_name=$(basename "$1" ".$source_file_ext")
+	source_file_path=$(cd "$(dirname "$arg_source_file")" && pwd)
+	source_file_ext=${arg_source_file##*.}
+	source_file_name=$(basename "$arg_source_file" ".$source_file_ext")
 	source_file_ext_lower=$(echo $source_file_ext | awk '{print tolower($0)}')
 	source_file_full_path="$source_file_path/$source_file_name.$source_file_ext"
 
 	trap handle_exit SIGINT
-
-	if [[ ! -f "$source_file_full_path" ]]; then
-		log_err "File $source_file_full_path not found"
-		exit 1
-	fi
 
 	SECONDS=0
 
@@ -315,12 +331,16 @@ main () {
 			if [[ $source_file_ext_lower == "aab" ]] || [[ $source_file_ext_lower == "apk" ]]; then
 				log_info "Installing the rebuilded apk file ${YELLOW}$apk_to_install"
 				adb install "$apk_path/$apk_name-patched.apk"
-				log_info "Output apk file for using in adb: ${YELLOW}$apk_to_install"
 			elif [[ $source_file_ext_lower == "xapk" ]]; then
 				log_info "Installing the rebuilded apk files:\n${YELLOW}$apks_list_for_log"
 				eval "adb install-multiple $apks_list"
-				log_info "Output apk files for using in adb: ${YELLOW}$apks_list"
 			fi
+		fi
+	else
+		if [[ $source_file_ext_lower == "aab" ]] || [[ $source_file_ext_lower == "apk" ]]; then
+			log_info "Output apk file for using in adb: ${YELLOW}$apk_to_install"
+		elif [[ $source_file_ext_lower == "xapk" ]]; then
+			log_info "Output apk files for using in adb: ${YELLOW}$apks_list"
 		fi
 	fi
 }

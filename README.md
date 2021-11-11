@@ -6,9 +6,17 @@ A bash script that prepares Android APK (or AAB, XAPK) for HTTPS traffic inspect
 The script allows to bypass SSL pinning on Android >= 7 via rebuilding the APK file and making the user credential storage trusted. After processing the output APK file is ready for HTTPS traffic inspection.
 
 If an AAB file provided the script creates a universal APK and processes it. If a XAPK file provided the script unzips it and processes every APK file.
+## Compatibility
 
-Works on macOS and Linux. Raise a [ticket](https://github.com/ilya-kozyr/android-ssl-pinning-bypass/issues/new/choose) if you need a Windows version of the script.
+Works on macOS and Linux.
 
+On Windows 10 / 11 the script can be used with Windows Subsystem for Linux. For this:
+1. Install WSL with help of, e.g. [this guide](https://www.thewindowsclub.com/how-to-run-sh-or-shell-script-file-in-windows-10).
+2. Install the [Ubuntu](https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6) from the Microsoft Store. Then launch Ubuntu app and let it config itself and then create a user.
+3. Install `xmlstarlet` and `openjdk-17-jre` via `apt-get install`.
+4. Use script in the terminal, easier in the Ubuntu app.
+
+The performance on the Windows probably will be a few times (~3.5) lower than in macOS / Linux (`apktool` takes longer time to decode the APK).
 ## How the script works?
 
 It:
@@ -28,10 +36,10 @@ Optionally the script allow to:
 Root access is not required.
 ## Requirements
 Install the tools from the list below:
-- [Homebrew](https://brew.sh/)
+- [Homebrew](https://brew.sh/) - package manager, required in case `xmlstarlet` or keystore file are missing 
 - [xmlstarlet](http://xmlstar.sourceforge.net) - install via `brew install xmlstarlet`
 - [adb](https://developer.android.com/studio) - can be installed with [Android Studio](https://developer.android.com/studio) (recommended) or [standalone package of the SDK platform tools](https://developer.android.com/studio/releases/platform-tools) (don't forget to add the path to the `adb` to the PATH environment variable)
-- [keytool](https://docs.oracle.com/javase/8/docs/technotes/tools/unix/keytool.html) - install JDK from [Oracle](https://www.oracle.com/java/technologies/downloads/) or via `brew install openjdk`
+- [keytool](https://docs.oracle.com/javase/8/docs/technotes/tools/unix/keytool.html) - required in case keystore file is missing, install via `brew install openjdk`
 
 The tools below will be downloaded by the script in case it's missing:
 - [bundletool](https://github.com/google/bundletool/releases)
@@ -48,31 +56,38 @@ The script can be launched like:
 - `sh /path/to/the/script/apk-rebuild.sh` - in case the execution permissions were not added and the script's location is not in the PATH environment variable.
 
 For rebuilding the APK file use script with argument(s). The examples are below:
-- patch the AAB file and install it on the Android-device: `apk-rebuild.sh input.aab -i` or `apk-rebuild.sh input.aab --install`
-- patch the APK file and remove the source APK file after patching: `apk-rebuild.sh input.apk -r` or `apk-rebuild.sh input.apk --remove`
+- patch the AAB file and install it on the Android-device: `apk-rebuild.sh -f input.aab -i` or `apk-rebuild.sh --file input.aab --install`
+- patch the APK file and remove the source APK file after patching: `apk-rebuild.sh Downloads/input.apk -r` or `apk-rebuild.sh input.apk --remove`
 - patch the APK file and do not delete the unpacked APK file content: `apk-rebuild.sh input.apk -p` or `apk-rebuild.sh input.apk --preserve`
 - patch the AAB file and make a pause before encoding the output APK: `apk-rebuild.sh input.aab --pause`
 - patch the APK file, remove the source APK file after patching and install the patched APK file on the Android-device: `apk-rebuild.sh input.apk -r -i`
 
-Launch terminal and type `apk-rebuild.sh` without arguments to print the using manual.
+The path to the source file can be specified with the argument with key `-f file.apk` or `--file file.apk` or with argument without the key `file.apk`.
+
+Launch terminal and type `apk-rebuild.sh` without arguments (or `apk-rebuild.sh -h`, or `apk-rebuild.sh --help`) to print the usage manual.
 ```
 USAGE
-	apk-rebuild.sh file [OPTIONS]
+	apk-rebuild.sh [-f|--file] /path/to/file/source_file [OPTIONS]
 
 DESCRIPTION
 	The script allows to bypass SSL pinning on Android >= 7 via rebuilding the APK file and making the user credential storage trusted. After processing the output APK file is ready for HTTPS traffic inspection.
-    If an AAB file provided the script creates a universal APK and processes it. If a XAPK file provided the script unzips it and processes every APK file.
+	If an AAB file provided the script creates a universal APK and processes it. If a XAPK file provided the script unzips it and processes every APK file.
 
-	file	APK, AAB or XAPK file to rebuild
+MANDATORY ARGUMENTS
+	-f, --file	APK, AAB or XAPK file for rebuilding. Can be specified with the keys -f or --file or just with a file path
 
 OPTIONS
 	-i, --install	Install the rebuilded APK file(s) via adb
 	-p, --preserve	Preserve the unpacked content of the APK file(s)
 	-r, --remove	Remove the source file (APK / AAB / XAPK), passed as the script argument, after rebuilding
 	--pause		Pause the script execution before the building the output APK
+	-h, --help	Print this help message
 
-EXAMPLE
+EXAMPLES
 	apk-rebuild.sh /path/to/file/file_to_rebuild.apk -r -i
+	apk-rebuild.sh --file /path/to/file/file_to_rebuild.aab --remove --install
+	apk-rebuild.sh --pause -i -f /path/to/file/file_to_rebuild.xapk
+	apk-rebuild.sh /path/to/file/file_to_rebuild.xapk
 ```
 
 ## Tip
