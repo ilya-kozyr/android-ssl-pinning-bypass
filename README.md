@@ -28,6 +28,7 @@ It:
 - signs the patched APK file(s) via `uber-apk-signer`.
 
 Optionally the script allow to:
+- use the specific keystore for signing the output APK;
 - install the patched APK file(s) directly to the device via `adb`;
 - preserve unpacked content of the input APK file(s);
 - remove the source file (APK / AAB / XAPK) after patching;
@@ -80,14 +81,21 @@ OPTIONS
 	-i, --install	Install the rebuilded APK file(s) via adb
 	-p, --preserve	Preserve the unpacked content of the APK file(s)
 	-r, --remove	Remove the source file (APK / AAB / XAPK), passed as the script argument, after rebuilding
-	--pause		Pause the script execution before the building the output APK
-	-h, --help	Print this help message
+	-o, --output	Output APK file name or output catalog path (in case of XAPK file)
+	--ks			Use custom keystore file for AAB decoding and APK signing
+	--ks-pass		Password of the custom keystore
+	--ks-alias		Key (alias) in the custom keystore
+	--ks-key-pass	Password for key (alias) in the custom keystore
+	--pause			Pause the script execution before the building the output APK
+	-q, --quiet		Do not print messages from external tools
+	-h, --help		Print this help message
 
 EXAMPLES
-	apk-rebuild.sh /path/to/file/file_to_rebuild.apk -r -i
-	apk-rebuild.sh --file /path/to/file/file_to_rebuild.aab --remove --install
-	apk-rebuild.sh --pause -i -f /path/to/file/file_to_rebuild.xapk
-	apk-rebuild.sh /path/to/file/file_to_rebuild.xapk
+	apk-rebuild.sh /path/to/file/file_to_rebuild.apk -r -i -q
+	sh apk-rebuild.sh --file /path/to/file/file_to_rebuild.aab --remove --install
+	sh /path/to/script/apk-rebuild.sh --pause -i -f /path/to/file/file_to_rebuild.xapk --ks /path/to/keystore/file.keystore --ks-pass password --ks-alias key_name --ks-key-pass password
+	apk-rebuild.sh /path/to/file/file_to_rebuild.xapk --quiet -o /path/to/output/directory
+	apk-rebuild.sh -f /path/to/file/file_to_rebuild.aab -o /path/to/output/file.apk -q
 ```
 
 ## Tip
