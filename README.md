@@ -54,7 +54,7 @@ The tools below will be downloaded by the script in case it's missing:
 The script can be launched like:
 - `apk-rebuild.sh` - in case the execution permissions were added and the script's location is in the PATH environment variable;
 - `/path/to/the/script/apk-rebuild.sh` - in case the execution permissions were added, but the script's location is not in the PATH environment variable;
-- `sh /path/to/the/script/apk-rebuild.sh` - in case the execution permissions were not added and the script's location is not in the PATH environment variable.
+- `bash /path/to/the/script/apk-rebuild.sh` - in case the execution permissions were not added and the script's location is not in the PATH environment variable.
 
 For rebuilding the APK file use script with argument(s). The examples are below:
 - patch the AAB file and install it on the Android-device: `apk-rebuild.sh -f input.aab -i` or `apk-rebuild.sh --file input.aab --install`

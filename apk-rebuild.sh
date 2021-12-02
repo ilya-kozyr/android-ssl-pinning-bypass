@@ -35,7 +35,7 @@ check_tools() {
 		if [[ ! -f "$tools_catalog/$tool_bin_name.jar" ]]; then
 			log_err "$tool_bin_name is missing"
 			log_warn "Removing previous versions of ${tools[i+3]} from $tools_catalog"
-			find $tools_catalog -name "${tools[i+3]}*.jar" -delete
+			find "$tools_catalog" -name "${tools[i+3]}*.jar" -delete
 			log_info "Downloading $tool_bin_name to $tools_catalog from $tool_bin_url"
 			curl -fsSL "$tool_bin_url" --output "$tools_catalog/$tool_bin_name.jar"
 			echo
@@ -88,7 +88,7 @@ check_tools() {
 		ks_file_path=$(cd "$(dirname "$arg_ks")" && pwd)
 		ks_file_name=$(basename "$arg_ks")
 		if [[ ! -f "$ks_file_path/$ks_file_name" ]]; then
-			log_err "Keystore file "$ks_file_path/$ks_file_name" is missing"
+			log_err "Keystore file $ks_file_path/$ks_file_name is missing"
 			have_all_tools=false
 		fi
 		if [[ $arg_ks_pass == '' ]]; then
@@ -122,22 +122,22 @@ check_tools() {
 handle_exit() {
 	log_err "Terminated with Ctrl+C, removing temp files"
 	if [[ -d "$decompiled_path" ]]; then rm -rf "$decompiled_path"; fi
-	if [[ $source_file_ext_lower == "aab" ]]; then rm "$source_file_path/$source_file_name.apk"; fi
-	if [[ -f "$source_file_name.apks" ]]; then rm "$source_file_name.apks"; fi
-	if [[ -d "$source_file_path/$source_file_name" ]]; then rm -rf "$source_file_path/$source_file_name"; fi
+	if [[ $source_file_ext_lower == "aab" ]] && [[ -f "$source_file_path/$source_file_name.apk" ]]; then rm "$source_file_path/$source_file_name.apk"; fi
+	if [[ -f "$source_file_path/$source_file_name.apks" ]]; then rm "$source_file_path/$source_file_name.apks"; fi
+	if [[ -d "$source_file_path/$source_file_name" ]]; then rm -rf "${source_file_path:?}/$source_file_name"; fi
 	exit 1
 }
 
 log_err() {
-	echo -e "${RED}[$prefix:ERROR] $*${NC}"
+	printf "${RED}[$prefix:ERROR] $*${NC}\n"
 }
 
 log_warn() {
-	echo -e "${YELLOW}[$prefix:WARNING] $*${NC}"
+	printf "${YELLOW}[$prefix:WARNING] $*${NC}\n"
 }
 
 log_info() {
-	echo -e "${CYAN}[$prefix:INFO] $*${NC}"
+	printf "${CYAN}[$prefix:INFO] $*${NC}\n"
 }
 
 parse_arguments() {
@@ -209,35 +209,35 @@ parse_arguments() {
 
 print_usage() {
 	script_name=$(basename "$0")
-	echo -e "${BLACK}USAGE${NC}"
-	echo -e "\t$script_name [-f|--file] /path/to/file/source_file [OPTIONS]"
-	echo -e
-	echo -e "${BLACK}DESCRIPTION${NC}"
-	echo -e "\tThe script allows to bypass SSL pinning on Android >= 7 via rebuilding the APK file and making the user credential storage trusted. After processing the output APK file is ready for HTTPS traffic inspection."
-	echo -e "\tIf an AAB file provided the script creates a universal APK and processes it. If a XAPK file provided the script unzips it and processes every APK file."
-	echo -e
-	echo -e "${BLACK}MANDATORY ARGUMENTS${NC}"
-	echo -e "\t-f, --file\tAPK, AAB or XAPK file for rebuilding. Can be specified with the keys -f or --file or just with a file path"
-	echo -e
-	echo -e "${BLACK}OPTIONS${NC}"
-	echo -e "\t-i, --install\tInstall the rebuilded APK file(s) via adb"
-	echo -e "\t-p, --preserve\tPreserve the unpacked content of the APK file(s)"
-	echo -e "\t-r, --remove\tRemove the source file (APK / AAB / XAPK), passed as the script argument, after rebuilding"
-	echo -e "\t-o, --output\tOutput APK file name or output catalog path (in case of XAPK file)"
-	echo -e "\t--ks\t\tUse custom keystore file for AAB decoding and APK signing"
-	echo -e "\t--ks-pass\tPassword of the custom keystore"
-	echo -e "\t--ks-alias\tKey (alias) in the custom keystore"
-	echo -e "\t--ks-key-pass\tPassword for key (alias) in the custom keystore"
-	echo -e "\t--pause\t\tPause the script execution before the building the output APK"
-	echo -e "\t-q, --quiet\tDo not print messages from external tools"
-	echo -e "\t-h, --help\tPrint this help message"
-	echo -e
-	echo -e "${BLACK}EXAMPLES${NC}"
-	echo -e "\t$script_name /path/to/file/file_to_rebuild.apk -r -i -q"
-	echo -e "\tsh $script_name --file /path/to/file/file_to_rebuild.aab --remove --install"
-	echo -e "\tsh /path/to/script/$script_name --pause -i -f /path/to/file/file_to_rebuild.xapk --ks /path/to/keystore/file.keystore --ks-pass password --ks-alias key_name --ks-key-pass password"
-	echo -e "\t$script_name /path/to/file/file_to_rebuild.xapk --quiet -o /path/to/output/directory"
-	echo -e "\t$script_name -f /path/to/file/file_to_rebuild.aab -o /path/to/output/file.apk -q"
+	printf "${BLACK}USAGE${NC}\n"
+	printf "\t$script_name [-f|--file] /path/to/file/source_file [OPTIONS]\n"
+	printf "\n"
+	printf "${BLACK}DESCRIPTION${NC}\n"
+	printf "\tThe script allows to bypass SSL pinning on Android >= 7 via rebuilding the APK file and making the user credential storage trusted. After processing the output APK file is ready for HTTPS traffic inspection.\n"
+	printf "\tIf an AAB file provided the script creates a universal APK and processes it. If a XAPK file provided the script unzips it and processes every APK file.\n"
+	printf "\n"
+	printf "${BLACK}MANDATORY ARGUMENTS${NC}\n"
+	printf "\t-f, --file\tAPK, AAB or XAPK file for rebuilding. Can be specified with the keys -f or --file or just with a file path\n"
+	printf "\n"
+	printf "${BLACK}OPTIONS${NC}\n"
+	printf "\t-i, --install\tInstall the rebuilded APK file(s) via adb\n"
+	printf "\t-p, --preserve\tPreserve the unpacked content of the APK file(s)\n"
+	printf "\t-r, --remove\tRemove the source file (APK / AAB / XAPK), passed as the script argument, after rebuilding\n"
+	printf "\t-o, --output\tOutput APK file name or output catalog path (in case of XAPK file)\n"
+	printf "\t--ks\t\tUse custom keystore file for AAB decoding and APK signing\n"
+	printf "\t--ks-pass\tPassword of the custom keystore\n"
+	printf "\t--ks-alias\tKey (alias) in the custom keystore\n"
+	printf "\t--ks-key-pass\tPassword for key (alias) in the custom keystore\n"
+	printf "\t--pause\t\tPause the script execution before the building the output APK\n"
+	printf "\t-q, --quiet\tDo not print messages from external tools\n"
+	printf "\t-h, --help\tPrint this help message\n"
+	printf "\n"
+	printf "${BLACK}EXAMPLES${NC}\n"
+	printf "\t$script_name /path/to/file/file_to_rebuild.apk -r -i -q\n"
+	printf "\t./$script_name --file /path/to/file/file_to_rebuild.aab --remove --install\n"
+	printf "\t./path/to/script/$script_name --pause -i -f /path/to/file/file_to_rebuild.xapk --ks /path/to/keystore/file.keystore --ks-pass password --ks-alias key_name --ks-key-pass password\n"
+	printf "\t$script_name /path/to/file/file_to_rebuild.xapk --quiet -o /path/to/output/directory\n"
+	printf "\t$script_name -f /path/to/file/file_to_rebuild.aab -o /path/to/output/file.apk -q\n"
 }
 
 rebuild_single_apk() {
@@ -258,15 +258,18 @@ rebuild_single_apk() {
 		mkdir -p "$decompiled_path/res/xml/"
 	fi
 	if [[ ! -f "$nsc_file" ]]; then
-		echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>" > "$nsc_file"
-		echo "<network-security-config>" >> "$nsc_file"
-		echo "  <base-config cleartextTrafficPermitted=\"true\">" >> "$nsc_file"
-		echo "    <trust-anchors>" >> "$nsc_file"
-		echo "      <certificates src=\"system\" />" >> "$nsc_file"
-		echo "      <certificates src=\"user\" />" >> "$nsc_file"
-		echo "    </trust-anchors>" >> "$nsc_file"
-		echo "  </base-config>" >> "$nsc_file"
-		echo "</network-security-config>" >> "$nsc_file"
+		touch "$nsc_file"
+		{
+			echo "<?xml version=\"1.0\" encoding=\"utf-8\"?>"
+			echo "<network-security-config>"
+			echo "  <base-config cleartextTrafficPermitted=\"true\">"
+			echo "    <trust-anchors>"
+			echo "      <certificates src=\"system\" />"
+			echo "      <certificates src=\"user\" />"
+			echo "    </trust-anchors>"
+			echo "  </base-config>"
+			echo "</network-security-config>"
+		} >> "$nsc_file"
 	fi
 
 	if [[ $(xmlstarlet sel -t -c "/network-security-config/base-config" "$nsc_file") == "" ]]; then
@@ -293,8 +296,10 @@ rebuild_single_apk() {
 	fi
 
 	if [[ $arg_pause_before_building == 1 ]]; then
+		seconds_temp=$SECONDS
 		log_info "Paused. Perform necessary actions and press ENTER to continue..."
 		read
+		SECONDS=$seconds_temp
 	fi
 
 	log_info "Building a new apk file"
@@ -339,7 +344,7 @@ main() {
 		arg_source_file=$1
 	fi
 
-	if [[ $arg_source_file == "" ]] || ([[ $arg_help == 1 ]] && [[ $arg_source_file == "" ]]); then
+	if [[ $arg_source_file == "" ]] || { [[ $arg_help == 1 ]] && [[ $arg_source_file == "" ]]; }; then
 		print_usage
 		exit 0
 	fi
@@ -354,7 +359,7 @@ main() {
 	source_file_path=$(cd "$(dirname "$arg_source_file")" && pwd)
 	source_file_ext=${arg_source_file##*.}
 	source_file_name=$(basename "$arg_source_file" ".$source_file_ext")
-	source_file_ext_lower=$(echo $source_file_ext | awk '{print tolower($0)}')
+	source_file_ext_lower=$(echo "$source_file_ext" | awk '{print tolower($0)}')
 	source_file_full_path="$source_file_path/$source_file_name.$source_file_ext"
 
 	if [[ $arg_output == '' ]]; then
@@ -372,7 +377,7 @@ main() {
 			output_path=$(cd "$arg_output" && pwd)
 		else
 			if [[ ! -d $(dirname "$arg_output") ]]; then
-				mkdir -p $(dirname "$arg_output")
+				mkdir -p "$(dirname "$arg_output")"
 			fi
 			output_path=$(cd "$(dirname "$arg_output")" && pwd)
 			output_name_with_ext=$(basename "$arg_output")
@@ -411,7 +416,7 @@ main() {
 
 			log_info "Removing apks file and catalog"
 			rm "$source_file_path/$source_file_name.apks"
-			rm -rf "$source_file_path/$source_file_name"
+			rm -rf "${source_file_path:?}/$source_file_name"
 
 			rebuild_single_apk "$source_file_path/$source_file_name.apk"
 
