@@ -47,12 +47,12 @@ The tools below will be downloaded by the script in case it's missing:
 ## Usage
 Preconditions:
 1. Clone the repository
-2. Add the path to the directory with `.py` script to the `PATH` environment variable
 2. Execute the command `pip3 install -r requirements.txt` to install the required python modules
 
-The script can be launched like:
-- `python3 apk-rebuild.py` - in case the script's location is in the PATH environment variable;
-- `python3 /path/to/the/script/apk-rebuild.py` - in case script's location is not in the PATH environment variable.
+The script can be launched like
+```
+python3 /path/to/the/script/apk-rebuild.py
+```
 
 Execute  `python3 apk-rebuild.py -h` (or `python3 apk-rebuild.py --help`) to print the usage manual.
 ```
@@ -93,11 +93,15 @@ Some examples of script usage:
 For rebuilding the APK file use script with argument(s). The examples are below:
 - patch the AAB file and do not delete the unpacked APK file content
 
-  ```python3 apk-rebuild.py input.aab --preserve```
+  ```
+  python3 apk-rebuild.py input.aab --preserve
+  ```
 
 - patch the APK file, remove the source APK file after patching and install the patched APK file on the Android-device
 
-  ```python3 apk-rebuild.py input.apk -r -i```
+  ```
+  python3 apk-rebuild.py input.apk -r -i
+  ```
 
 The path to the source file must be specified as the first argument.
 
