@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 import platform, os, sys, colorama, ssl, glob, argparse, textwrap, time, shutil, subprocess, zipfile
 from pathlib import Path
 from signal import signal, SIGINT
