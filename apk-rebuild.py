@@ -50,13 +50,13 @@ class tools:
     tools_data = [
         {
             'file_name': 'bundletool-all-',
-            'version': '1.8.2',
+            'version': '1.9.0',
             'url': 'https://github.com/google/bundletool/releases/download/',
             'name': 'bundletool'
         },
         {
             'file_name': 'apktool_',
-            'version': '2.6.0',
+            'version': '2.6.1',
             'url': 'https://github.com/iBotPeaches/Apktool/releases/download/v',
             'name': 'apktool'
         },
