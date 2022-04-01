@@ -83,11 +83,6 @@ options:
   --ks-alias KS_ALIAS   key (alias) in the custom keystore
   --ks-alias-pass KS_ALIAS_PASS
                         password for key (alias) in the custom keystore
-
-Some examples of script usage:
-- apk-rebuild.py /path/to/file/file_to_rebuild.apk -r -i --pause
-- apk-rebuild.py /path/to/file/file_to_rebuild.aab --ks /path/to/keystore/file.keystore --ks-pass password --ks-alias key_name --ks-key-pass password
-- apk-rebuild.py /path/to/file/file_to_rebuild.xapk -o /path/to/output/directory
 ```
 
 For rebuilding the APK file use script with argument(s). The examples are below:

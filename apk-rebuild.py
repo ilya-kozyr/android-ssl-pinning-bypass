@@ -330,13 +330,7 @@ def main():
     global garbage
 
     # parse script arguments
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter,
-                                    description='The script allows to bypass SSL pinning on Android >= 7 via rebuilding the APK file and making the user credential storage trusted. After processing the output APK file is ready for HTTPS traffic inspection.',
-                                    epilog=textwrap.dedent('''
-                                        Some examples of script usage: 
-                                        - %(prog)s /path/to/file/file_to_rebuild.apk -r -i --pause
-                                        - %(prog)s /path/to/file/file_to_rebuild.aab --ks /path/to/keystore/file.keystore --ks-pass password --ks-alias key_name --ks-key-pass password
-                                        - %(prog)s /path/to/file/file_to_rebuild.xapk -o /path/to/output/directory'''))
+    parser = argparse.ArgumentParser(description='The script allows to bypass SSL pinning on Android >= 7 via rebuilding the APK file and making the user credential storage trusted. After processing the output APK file is ready for HTTPS traffic inspection.')
     parser.add_argument('source_file', metavar='file', help='path to .apk, .aab or .xapk file for rebuilding')
     parser.add_argument('-v', '--version', action='version', version=f'%(prog)s {script_version}')
     parser.add_argument('-i', '--install', action='store_true', help='install the rebuilded .apk file(s) via adb')
