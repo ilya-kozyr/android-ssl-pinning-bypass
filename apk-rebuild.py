@@ -52,7 +52,7 @@ class tools:
     tools_data = [
         {
             'file_name': 'bundletool-all-',
-            'version': '1.9.0',
+            'version': '1.10.0',
             'url': 'https://github.com/google/bundletool/releases/download/',
             'name': 'bundletool'
         },
