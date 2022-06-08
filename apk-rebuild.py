@@ -119,8 +119,12 @@ def log_info(arg_msg):
 def check_tools():
     have_all_tools = True
 
-    command_output = subprocess.run(['java', '-version'], stderr=subprocess.PIPE).stderr.decode('utf-8')
-    if not 'build' in command_output.lower():
+    try:
+        command_output = subprocess.run(['java', '-version'], stderr=subprocess.PIPE).stderr.decode('utf-8')
+        if not 'build' in command_output.lower():
+            have_all_tools = False
+            log_err(f'java not found')
+    except:
         have_all_tools = False
         log_err(f'java not found')
 
