@@ -111,4 +111,4 @@ For bug reports, feature requests or discussing an idea, open an issue [here](ht
 Many thanks to:
 - [Connor Tumbleson](https://github.com/iBotPeaches) for [apktool](https://github.com/iBotPeaches/Apktool)
 - [Patrick Favre-Bulle](https://github.com/patrickfav) for [uber-apk-signer](https://github.com/patrickfav/uber-apk-signer)
-- [Google](https://github.com/google) for [bundletool](https://github.com/google/bundletool/releases)
+- [Google](https://github.com/google) for [bundletool](https://github.com/google/bundletool)
