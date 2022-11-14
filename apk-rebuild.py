@@ -52,7 +52,7 @@ class tools:
     tools_data = [
         {
             'file_name': 'bundletool-all-',
-            'version': '1.10.0',
+            'version': '1.11.2',
             'url': 'https://github.com/google/bundletool/releases/download/',
             'name': 'bundletool'
         },
@@ -472,9 +472,9 @@ def main():
         str_apk_list = ''
         for single_apk in new_apk_list:
             str_apk_list += f'"{str(single_apk)}" '
-        log_info(f'Command for installing:\n{colors.OKGREEN}adb install-multiple {str_apk_list}')
+        log_info(f'Command for installing: {colors.OKGREEN}adb install-multiple {str_apk_list}')
     else:
-        log_info(f'Command for installing:\n{colors.OKGREEN}adb install "{str(output_files.full_path)}"')
+        log_info(f'Command for installing: {colors.OKGREEN}adb install "{str(output_files.full_path)}"')
 
     # script end
     exit_script(0)
