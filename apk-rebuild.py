@@ -180,7 +180,7 @@ def check_tools():
                     log_err(f'Key password is missing, specify it with --ks-key-pass argument')
                     have_all_tools = False
             else:
-                command_output = subprocess.run(['keytool', '-list', '-keystore', str(Path(args.ks).resolve()) ,'-storepass', args.ks_pass, '-alias', args.ks_alias], stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout.decode('utf-8')
+                command_output = subprocess.run(['keytool', '-J-Duser.language=en', '-list', '-keystore', str(Path(args.ks).resolve()) ,'-storepass', args.ks_pass, '-alias', args.ks_alias], stdout=subprocess.PIPE, stderr=subprocess.PIPE).stdout.decode('utf-8')
                 if 'password was incorrect' in command_output:
                     log_err(f"Provided key password '{args.ks_pass}' is incorrect")
                     have_all_tools=False
