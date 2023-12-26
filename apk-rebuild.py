@@ -64,7 +64,7 @@ class tools:
         },
         {
             'file_name': 'uber-apk-signer-',
-            'version': '1.2.2',
+            'version': '1.2.1', # do not update to 1.2.2
             'url': 'https://github.com/patrickfav/uber-apk-signer/releases/download/v',
             'name': 'uber-apk-signer'
         }
