@@ -81,6 +81,7 @@ class source_file:
     name_wo_ext = ''
     ext = ''
     full_path = ''
+    full_path_wo_ext = ''
 
 
 
@@ -367,6 +368,7 @@ def main():
     source_file.name_wo_ext = Path(args.source_file).resolve().stem
     source_file.directory_path = Path(args.source_file).resolve().parent
     source_file.full_path = Path(args.source_file).resolve()
+    source_file.full_path_wo_ext = source_file.full_path.with_suffix('')
 
     # generate pathes for output file(s)
     if args.output != None:
@@ -382,7 +384,7 @@ def main():
             output_files.directory_path = Path(source_file.directory_path).joinpath(source_file.name_wo_ext)
         else:
             output_files.directory_path = source_file.directory_path
-            output_files.full_path = Path(str(source_file.full_path) + output_suffix + output_ext).resolve()
+            output_files.full_path = Path(str(source_file.full_path_wo_ext) + output_suffix + output_ext).resolve()
 
     # source file processing start time
     global start_time
@@ -434,7 +436,7 @@ def main():
         apk_files_list = Path(xapk_dir_full_path).glob('*.apk'.lower())
         new_apk_list = []
         for single_apk in apk_files_list:
-            single_apk_new = xapk_dir_full_path.joinpath(single_apk.name + output_suffix + output_ext).resolve()
+            single_apk_new = xapk_dir_full_path.joinpath(str(Path(single_apk.name).with_suffix('')) + output_suffix + output_ext).resolve()
             rebuild_single_apk(single_apk, single_apk_new)
             new_apk_list.append(single_apk_new)
             single_apk.unlink()
