@@ -52,19 +52,19 @@ class tools:
     tools_data = [
         {
             'file_name': 'bundletool-all-',
-            'version': '1.15.4',
+            'version': '1.15.6',
             'url': 'https://github.com/google/bundletool/releases/download/',
             'name': 'bundletool'
         },
         {
             'file_name': 'apktool_',
-            'version': '2.8.0',
+            'version': '2.9.1',
             'url': 'https://github.com/iBotPeaches/Apktool/releases/download/v',
             'name': 'apktool'
         },
         {
             'file_name': 'uber-apk-signer-',
-            'version': '1.2.1',
+            'version': '1.2.2',
             'url': 'https://github.com/patrickfav/uber-apk-signer/releases/download/v',
             'name': 'uber-apk-signer'
         }
