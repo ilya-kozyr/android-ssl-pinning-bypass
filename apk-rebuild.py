@@ -52,13 +52,13 @@ class tools:
     tools_data = [
         {
             'file_name': 'bundletool-all-',
-            'version': '1.15.6',
+            'version': '1.18.3',
             'url': 'https://github.com/google/bundletool/releases/download/',
             'name': 'bundletool'
         },
         {
             'file_name': 'apktool_',
-            'version': '2.9.1',
+            'version': '2.12.1',
             'url': 'https://github.com/iBotPeaches/Apktool/releases/download/v',
             'name': 'apktool'
         },
@@ -309,7 +309,7 @@ def rebuild_single_apk(arg_source_apk_full_path, arg_output_apk_full_path):
 
     # building a new .apk file with apktool
     log_info('Building a new .apk file')
-    command = ['java', '-jar', str(tools.apktool_path), 'build', str(decompiled_path), '--use-aapt2', '--output', str(arg_output_apk_full_path)]
+    command = ['java', '-jar', str(tools.apktool_path), 'build', str(decompiled_path), '--output', str(arg_output_apk_full_path)]
     subprocess.run(command, stdout=sys.stdout, stderr=sys.stderr)
     garbage['files'].append(arg_output_apk_full_path)
 
