@@ -98,22 +98,22 @@ def exit_script(arg_code):
 
 
 def log_err(arg_msg):
-    print(f'{colors.FAIL}[{prefix}:ERROR] {arg_msg}{colors.ENDC}')
+    print(f'{colors.FAIL}[ERROR] {arg_msg}{colors.ENDC}')
 
 
 
 def log_warn(arg_msg):
-    print(f'{colors.WARNING}[{prefix}:WARNING] {arg_msg}{colors.ENDC}')
+    print(f'{colors.WARNING}[WARNING] {arg_msg}{colors.ENDC}')
 
 
 
 def log_succ(arg_msg):
-    print(f'{colors.OKGREEN}[{prefix}:SUCCESS] {arg_msg}{colors.ENDC}')
+    print(f'{colors.OKGREEN}[SUCCESS] {arg_msg}{colors.ENDC}')
 
 
 
 def log_info(arg_msg):
-    print(f'{colors.OKBLUE}[{prefix}:INFO] {arg_msg}{colors.ENDC}')
+    print(f'{colors.OKBLUE}[INFO] {arg_msg}{colors.ENDC}')
 
 
 
