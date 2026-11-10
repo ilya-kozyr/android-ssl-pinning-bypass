@@ -39,7 +39,7 @@ class tools:
     # path of home user directory
     home_path = str(Path.home())
 
-    # path where apktool, bundletool and uder-apk-signer will be placed
+    # path where apktool, bundletool and uber-apk-signer will be placed
     platforn_name = platform.system()
     if platforn_name == 'Darwin':
         tools_dir = Path(home_path).joinpath('Library', 'Application Support', 'apk-rebuild').resolve()
@@ -58,7 +58,7 @@ class tools:
         },
         {
             'file_name': 'apktool_',
-            'version': '2.12.1',
+            'version': '3.0.3',
             'url': 'https://github.com/iBotPeaches/Apktool/releases/download/v',
             'name': 'apktool'
         },
@@ -70,7 +70,7 @@ class tools:
         }
     ]
 
-    # tools pathes
+    # tools paths
     bundletool_path = Path(tools_dir).joinpath(tools_data[0]['file_name'] + tools_data[0]['version'] + '.jar').resolve()
     apktool_path = Path(tools_dir).joinpath(tools_data[1]['file_name'] + tools_data[1]['version'] + '.jar').resolve()
     uber_apk_signer_path = Path(tools_dir).joinpath(tools_data[2]['file_name'] + tools_data[2]['version'] + '.jar').resolve()
