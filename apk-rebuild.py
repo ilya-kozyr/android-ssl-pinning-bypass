@@ -11,7 +11,7 @@ colorama.init()
 # bypass CERTIFICATE_VERIFY_FAILED error when downloading files
 ssl._create_default_https_context = ssl._create_unverified_context
 
-script_version = '1.0'
+script_version = '1.1'
 prefix = Path(sys.argv[0]).resolve().name
 output_suffix = '-patched'
 output_ext = '.apk'
@@ -249,27 +249,27 @@ def rebuild_single_apk(arg_source_apk_full_path, arg_output_apk_full_path):
         parser = etree.XMLParser(remove_blank_text=True)
         tree = etree.parse(str(network_security_config_full_path), parser=parser)
         # if network_security_config.xml exists checking the presence of the necessary tags and attributes
-        if tree.find("base-config/trust-anchors/certificates[@src='user']") == None:
+        if tree.find("base-config/trust-anchors/certificates[@src='user']") is None:
             log_warn("File /res/xml/network_security_config.xml doesn't meet the requirements")
             root = tree.getroot()
 
             # checking the 'base-config' tag
             elem_base = tree.find('base-config')
-            if elem_base == None:
+            if elem_base is None:
                 log_info('Adding element <base-config cleartextTrafficPermitted="false">')
                 root.append(etree.Element('base-config', cleartextTrafficPermitted='false'))
                 elem_base = tree.find('base-config')
 
             # checking the 'trust-anchors' tag
             elem_trust = tree.find('base-config/trust-anchors')
-            if elem_trust == None:
+            if elem_trust is None:
                 log_info('Adding element <trust-anchors>')
                 elem_base.append(etree.Element('trust-anchors'))
                 elem_trust = tree.find('base-config/trust-anchors')
 
             # checking the 'certificates' tags with 'src' attribute
             for ca_type in ['system', 'user']:
-                if tree.find("base-config/trust-anchors/certificates[@src='" + ca_type + "']") == None:
+                if tree.find("base-config/trust-anchors/certificates[@src='" + ca_type + "']") is None:
                     log_info(f'Adding element <certificates src="{ca_type}">')
                     elem_trust.append(etree.Element('certificates', src=ca_type))
 
@@ -283,18 +283,34 @@ def rebuild_single_apk(arg_source_apk_full_path, arg_output_apk_full_path):
     # reading AndroidManifest.xml
     parser = etree.XMLParser(remove_blank_text=True)
     tree = etree.parse(str(android_manifest_full_path), parser=parser)
-    # checking AndroidManifest.xml
-    if tree.find("application[@android:networkSecurityConfig='@xml/network_security_config']", {'android': 'http://schemas.android.com/apk/res/android'}) == None:
+    root = tree.getroot()
+    elem_application = tree.find('application')
+    android_ns = '{http://schemas.android.com/apk/res/android}'
+
+    # 1. Универсальная очистка всех тегов <meta-data> от пробелов (apktool space bug)
+    stripped_meta_count = 0
+    for meta in tree.iter('meta-data'):
+        val = meta.get(f'{android_ns}value')
+        if val and isinstance(val, str):
+            cleaned_val = val.strip().lstrip('\\').strip()
+            if cleaned_val != val:
+                meta_name = meta.get(f'{android_ns}name', 'unknown')
+                log_info(f'Stripping spaces in meta-data "{meta_name}": "{val}" -> "{cleaned_val}"')
+                meta.set(f'{android_ns}value', cleaned_val)
+                stripped_meta_count += 1
+    if stripped_meta_count > 0:
+        log_succ(f'Successfully normalized {stripped_meta_count} meta-data tag(s)')
+
+    # 2. Настройка networkSecurityConfig
+    if tree.find("application[@android:networkSecurityConfig='@xml/network_security_config']", {'android': 'http://schemas.android.com/apk/res/android'}) is None:
         log_warn(f"File AndroidManifest.xml doesn't meet the requirements")
-        root = tree.getroot()
-        elem_application = tree.find('application')
         log_info('Adding attribute android:networkSecurityConfig="@xml/network_security_config"')
-        # updating 'application' tag
-        elem_application.set('{http://schemas.android.com/apk/res/android}networkSecurityConfig', '@xml/network_security_config')
-        # writing AndroidManifest.xml
-        etree.ElementTree(root).write(str(android_manifest_full_path), pretty_print=True, encoding='utf-8', xml_declaration=True)
+        elem_application.set(f'{android_ns}networkSecurityConfig', '@xml/network_security_config')
     else:
         log_succ(f'File AndroidManifest.xml meets the requirements')
+
+    # Запись манифеста с сохранением всех модификаций
+    etree.ElementTree(root).write(str(android_manifest_full_path), pretty_print=True, encoding='utf-8', xml_declaration=True)
 
     # processing '--pause' argument
     if args.pause:
@@ -320,7 +336,7 @@ def rebuild_single_apk(arg_source_apk_full_path, arg_output_apk_full_path):
         command.extend(['--ks', args.ks, '--ksPass', args.ks_pass, '--ksAlias', args.ks_alias, '--ksKeyPass', args.ks_alias_pass])
     subprocess.run(command, stdout=sys.stdout, stderr=sys.stderr)
 
-    # removing the decompiled directory if atgument '--preserve' was not provided
+    # removing the decompiled directory if argument '--preserve' was not provided
     if not args.preserve:
         log_info(f'Removing decompiled directory {colors.WARNING}{decompiled_path}')
         shutil.rmtree(decompiled_path, ignore_errors=True)
@@ -425,7 +441,7 @@ def main():
         apk_full_path.unlink()
     elif source_file.ext.lower() == '.xapk':
         # extracting .xapk
-        log_info(f'Extracing .xapk')
+        log_info(f'Extracting .xapk')
         xapk_dir_full_path = output_files.directory_path
         garbage['dirs'].append(xapk_dir_full_path)
         with zipfile.ZipFile(source_file.full_path, 'r') as zip_ref:
